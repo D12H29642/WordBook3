@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>영남고 단어장 (Prodigy ~ Came out to)</title>
+  <style>
+    body { font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif; padding: 12px; background-color: #f9f9f9; }
+    h2 { text-align: center; margin: 15px 0 20px; color: #333; }
+    
+    #controls { text-align: center; margin-bottom: 15px; }
+    #btn-reverse {
+      background-color: #007bff; color: white; border: none; padding: 10px 20px;
+      border-radius: 6px; font-size: 1rem; cursor: pointer; transition: background 0.2s;
+    }
+    #btn-reverse:hover { background-color: #0056b3; }
+
+    #counters { font-weight: bold; margin-bottom: 15px; text-align:center; font-size: 1.1em; }
+    
+    .table-wrapper { overflow-x: auto; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-radius: 8px; background: white; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.95em; }
+    
+    th, td { border-bottom: 1px solid #eee; padding: 12px 10px; text-align: left; vertical-align: middle; }
+    th { background: #f1f3f5; color: #495057; font-weight: bold; border-top: 2px solid #dee2e6; }
+    tr:last-child td { border-bottom: none; }
+    
+    /* 가리기 효과 */
+    .conceal { 
+      color: transparent; 
+      text-shadow: 0 0 8px rgba(0,0,0,0.5); 
+      background-color: #e9ecef; 
+      border-radius: 4px;
+      cursor: pointer; 
+      user-select: none;
+    }
+    
+    /* 상태 표시 */
+    .unknown td { background-color: #fff5f5; }
+    .unknown .col-eng, .unknown .col-mean { color: #e03131 !important; font-weight: bold; }
+    .known td { background-color: #f8f9fa; color: #adb5bd; }
+    
+    /* 버튼 스타일 */
+    button { cursor: pointer; border: 1px solid #ced4da; background: white; border-radius: 4px; }
+    .speak { 
+      font-size: 1.2em; border: none; background: none; 
+      cursor: pointer; padding: 0 0 0 5px; vertical-align: middle;
+    }
+    .col-act { white-space: nowrap; width: 120px; text-align: center; }
+    .btn-known { margin-right: 5px; color: #2b8a3e; border-color: #2b8a3e; padding: 4px 8px; }
+    .btn-known:hover { background: #2b8a3e; color: white; }
+    .btn-unknown { color: #c92a2a; border-color: #c92a2a; padding: 4px 8px; }
+    .btn-unknown:hover { background: #c92a2a; color: white; }
+
+  </style>
+</head>
+<body>
+  <h2>영남고 단어장 (Prodigy ~ Came out to)</h2>
+
+  <div id="controls">
+    <button id="btn-reverse" type="button">🔄 단어/뜻 뒤집기</button>
+  </div>
+
+  <div id="counters">암기: 0 | 미암기: 0</div>
+
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 40%">영어</th>
+          <th style="width: 40%">뜻</th>
+          <th>상태</th>
+        </tr>
+      </thead>
+      <tbody id="word-body"></tbody>
+    </table>
+  </div>
+
+  <script>
+    // 요청하신 새로운 단어 리스트만 포함
+    const WORDS = [
+      { eng: "prodigy", mean: "영재" },
+      { eng: "the number of", mean: "~의 수" },
+      { eng: "a number of", mean: "다수의, 많은" },
+      { eng: "be admitted to", mean: "~에 입학하다" },
+      { eng: "make a/an (직업)", mean: "(직업)을 갖다." },
+      { eng: "manually", mean: "수동으로" },
+      { eng: "segregation", mean: "인종 차별" },
+      { eng: "be reassigned to", mean: "~에 재배치 받다" },
+      { eng: "permission", mean: "허락" },
+      { eng: "pay off", mean: "결실을 맺다" },
+      { eng: "credit", mean: "인정" },
+      { eng: "trajectory", mean: "궤적" },
+      { eng: "figure", mean: "수치" },
+      { eng: "dedicate A to B", mean: "A를 B에 바치다" },
+      { eng: "champion", mean: "옹호하다, 지지하다" },
+      { eng: "legacy", mean: "유산" },
+      { eng: "expectation", mean: "기대" },
+      { eng: "facility", mean: "시설" },
+      { eng: "boundary", mean: "범위" },
+      { eng: "prepare you for this career", mean: "네가 이 직업을 준비할 수 있게 해주다" },
+      { eng: "stroke", mean: "쓰다듬다" },
+      { eng: "came to", mean: "~하게 되다" },
+      { eng: "take a liking to", mean: "~이 마음에 들다" },
+      { eng: "prestigious", mean: "명망 높은" },
+      { eng: "side effects", mean: "부작용" },
+      { eng: "portrait", mean: "초상화" },
+      { eng: "questionnaire", mean: "설문지" },
+      { eng: "suspend(ed)", mean: "매달다 (매달린)" },
+      { eng: "appearance", mean: "외형 외모" },
+      { eng: "to one’s surprise", mean: "놀랍게도" },
+      { eng: "be afraid of", mean: "두려워하다" },
+      { eng: "barn", mean: "헛간" },
+      { eng: "desperately", mean: "절실히" },
+      { eng: "sink", mean: "가라앉다" },
+      { eng: "gratitude", mean: "감사" },
+      { eng: "vanish", mean: "사라지다" },
+      { eng: "nightly", mean: "밤의(형용사)" },
+      { eng: "take a turn for the better/worse", mean: "좋아지다/나빠지다" },
+      { eng: "go by", mean: "(시간/계절 등이) 흘러가다" },
+      { eng: "be observant", mean: "주의 깊게 관찰하다" },
+      { eng: "As it turned out", mean: "알고보니" },
+      { eng: "is already well on her way to", mean: "~을 잘 하고 있다" },
+      { eng: "superficially", mean: "겉보기에, 피상적으로" },
+      { eng: "continue her", mean: "그녀를 이어가다" },
+      { eng: "chance", mean: "가능성" },
+      { eng: "transfer", mean: "움직이다" },
+      { eng: "drives and desires", mean: "충동과 욕구" },
+      { eng: "came out to V", mean: "나와서 V하다" }
+    ];
+
+    let knownCount = 0;
+    let unknownCount = 0;
+    let reversed = false;
+    let voices = [];
+
+    // --- 음성 인식(TTS) 로직 ---
+    function loadVoices() {
+      voices = window.speechSynthesis.getVoices();
+    }
+    
+    if (window.speechSynthesis.onvoiceschanged !== undefined) {
+      window.speechSynthesis.onvoiceschanged = loadVoices;
+    }
+    loadVoices();
+
+    function speak(text) {
+      window.speechSynthesis.cancel(); // 중복 재생 방지
+
+      // 텍스트 정제 로직:
+      // 1. 괄호 안의 내용 (직업) 등 제거 -> replace(/\(.*\)/g, '')
+      // 2. 슬래시(/)나 특수문자 제거 후 공백 처리 -> replace(/[^a-zA-Z\s’'-]/g, ' ')
+      // 예: "make a/an (직업)" -> "make a an" 으로 발음
+      const cleanText = text
+        .replace(/\(.*\)/g, '') 
+        .replace(/\//g, ' ') 
+        .replace(/[^a-zA-Z\s’'-]/g, ' ')
+        .trim();
+
+      const u = new SpeechSynthesisUtterance(cleanText);
+      u.lang = 'en-US';
+      u.rate = 0.9; 
+
+      if (voices.length > 0) {
+        // Google US English 또는 일반 US English 우선 선택
+        const preferredVoice = voices.find(v => 
+          (v.name.includes('Google') && v.lang.includes('en-US')) || 
+          v.lang === 'en-US' || 
+          v.lang.startsWith('en')
+        );
+        if (preferredVoice) {
+          u.voice = preferredVoice;
+        }
+      }
+
+      window.speechSynthesis.speak(u);
+    }
+    // ----------------------------
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, m => (
+        { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]
+      ));
+    }
+
+    function updateCounters() {
+      document.getElementById('counters').textContent = `암기: ${knownCount} | 미암기: ${unknownCount}`;
+    }
+
+    function setEnglishCellContent(td, text) {
+      // 텍스트와 스피커 버튼 배치
+      td.innerHTML = `<span>${escapeHtml(text)}</span> <button class="speak" aria-label="듣기">🔊</button>`;
+      const btn = td.querySelector('.speak');
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        speak(text);
+      };
+    }
+
+    function buildTable() {
+      const tb = document.getElementById('word-body');
+      tb.innerHTML = '';
+      
+      WORDS.forEach((item) => {
+        const tr = document.createElement('tr');
+        
+        // 영어 셀
+        const tdEng = document.createElement('td');
+        tdEng.className = 'col-eng';
+        tdEng.dataset.original = item.eng;
+        setEnglishCellContent(tdEng, item.eng);
+        
+        // 뜻 셀
+        const tdMean = document.createElement('td');
+        tdMean.className = 'col-mean';
+        tdMean.dataset.meaning = item.mean;
+        tdMean.textContent = item.mean;
+        
+        // 버튼 셀
+        const tdAct = document.createElement('td');
+        tdAct.className = 'col-act';
+        tdAct.innerHTML = `<button class="btn-known">암기</button><button class="btn-unknown">미암기</button>`;
+        
+        tr.append(tdEng, tdMean, tdAct);
+        tb.appendChild(tr);
+      });
+      
+      knownCount = 0; unknownCount = 0; updateCounters(); applyConceal();
+    }
+
+    function mark(btn, type) {
+      const row = btn.closest('tr');
+      const tb  = row.parentNode;
+      
+      if (type === 'known') {
+        if (!row.classList.contains('known')) {
+          knownCount++;
+          if (row.classList.contains('unknown')) unknownCount--;
+          row.classList.add('known');
+          row.classList.remove('unknown');
+        }
+      } else if (type === 'unknown') {
+        if (!row.classList.contains('unknown')) {
+          unknownCount++;
+          if (row.classList.contains('known')) knownCount--;
+          row.classList.add('unknown');
+          row.classList.remove('known');
+          tb.insertBefore(row, tb.firstChild);
+        }
+      }
+      updateCounters();
+    }
+
+    function applyConceal() {
+      document.querySelectorAll('#word-body tr').forEach(r => {
+        const eng = r.querySelector('.col-eng');
+        const mean = r.querySelector('.col-mean');
+        if(!eng || !mean) return;
+
+        // 초기화
+        eng.classList.remove('conceal');
+        mean.classList.remove('conceal');
+        
+        // 내용 복구 (스피커 버튼 포함)
+        if(!eng.querySelector('button')) setEnglishCellContent(eng, eng.dataset.original);
+        mean.textContent = mean.dataset.meaning;
+
+        // 가리기 적용
+        const target = reversed ? eng : mean;
+        target.textContent = '클릭해 보기';
+        target.classList.add('conceal');
+      });
+    }
+
+    function handleConcealClick(td) {
+      if (!td.classList.contains('conceal')) {
+        // 이미 보이는 상태면 다시 가리기 (토글)
+        const row = td.closest('tr');
+        const eng = row.querySelector('.col-eng');
+        const mean = row.querySelector('.col-mean');
+        
+        const target = reversed ? eng : mean;
+        if (td === target) {
+          td.textContent = '클릭해 보기';
+          td.classList.add('conceal');
+        }
+        return;
+      }
+
+      // 가려진 상태 -> 보여주기
+      if (td.classList.contains('col-eng')) {
+        setEnglishCellContent(td, td.dataset.original);
+      } else {
+        td.textContent = td.dataset.meaning;
+      }
+      td.classList.remove('conceal');
+    }
+
+    function reverseCols() {
+      reversed = !reversed;
+      const ths = document.querySelectorAll('thead th');
+      if (reversed) {
+        ths[0].textContent = "뜻";
+        ths[1].textContent = "영어";
+      } else {
+        ths[0].textContent = "영어";
+        ths[1].textContent = "뜻";
+      }
+      
+      document.querySelectorAll('#word-body tr').forEach(r => {
+        const cells = Array.from(r.children);
+        if (cells.length < 3) return;
+        r.append(cells[1], cells[0], cells[2]);
+      });
+      applyConceal();
+    }
+
+    // 이벤트 리스너 설정
+    document.addEventListener('click', (e) => {
+      if (e.target.matches('.btn-known')) {
+        mark(e.target, 'known');
+        return;
+      }
+      if (e.target.matches('.btn-unknown')) {
+        mark(e.target, 'unknown');
+        return;
+      }
+      const td = e.target.closest('td');
+      if (td && (td.classList.contains('col-eng') || td.classList.contains('col-mean'))) {
+        handleConcealClick(td);
+      }
+    });
+
+    document.getElementById('btn-reverse').addEventListener('click', reverseCols);
+
+    buildTable();
+  </script>
+</body>
+</html>
